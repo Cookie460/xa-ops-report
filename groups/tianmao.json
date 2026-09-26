@@ -1,0 +1,24 @@
+{
+  "group_name": "天猫榜单",
+  "leader": "",
+  "data_source": "sheet",
+
+  "sheet_mcp_url": "https://example.invalid/YOUR_MCP_ENDPOINT",
+  "ranking_mcp_url": "https://example.invalid/YOUR_MCP_ENDPOINT",
+
+  "summary_node_id": "EXAMPLE_SUMMARY_NODE_ID",
+  "summary_sheets": {
+    "周度": "天猫榜单&底纹&下拉-周度",
+    "月度": "天猫榜单月度"
+  },
+  "summary_project_filter": "天猫榜单",
+
+  "ranking_node_id": "EXAMPLE_RANKING_NODE_ID",
+  "ranking_sheet_name_pattern": "{year}.{month}",
+
+  "exclude_from_metrics": [],
+
+  "cron": {
+    "dashboard_update": "0 9,11,13,15,17 * * *"
+  }
+}

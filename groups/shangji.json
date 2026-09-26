@@ -1,0 +1,21 @@
+{
+  "group_name": "商机组",
+  "leader": "示例人员3",
+  "data_source": "sheet",
+  "inactive": true,
+  "inactive_from": "2026-07-01",
+  "sheet_mcp_url": "https://example.invalid/YOUR_MCP_ENDPOINT",
+  "data_node_id": "EXAMPLE_DATA_NODE_ID",
+  "data_sheet_ids": {
+    "人员名单": "EXAMPLE_DATA_SHEET_IDS_人员名单"
+  },
+  "perf_sheet_name_pattern": "{year}年{month}月绩效",
+  "attendance_node_id": "EXAMPLE_ATTENDANCE_NODE_ID",
+  "attendance_sheet_name_pattern": "{year}年{month}月",
+  "exclude_from_metrics": [],
+  "webhook_url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_DINGTALK_ACCESS_TOKEN",
+  "webhook_secret": "YOUR_DINGTALK_SECRET",
+  "cron": {
+    "daily_report": "0 11 * * *"
+  }
+}

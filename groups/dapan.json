@@ -1,0 +1,65 @@
+{
+  "group_name": "大盘组",
+  "leader": "示例人员1",
+
+  "mcp_url": "https://example.invalid/YOUR_MCP_ENDPOINT",
+
+  "webhook_url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_DINGTALK_ACCESS_TOKEN",
+  "webhook_secret": "YOUR_DINGTALK_SECRET",
+
+  "base_id": "EXAMPLE_BASE_ID",
+  "table_ids": {
+    "roster": "EXAMPLE_TABLE_IDS_ROSTER",
+    "daily": "EXAMPLE_TABLE_IDS_DAILY",
+    "project": "EXAMPLE_TABLE_IDS_PROJECT"
+  },
+
+  "field_ids": {
+    "roster": {
+      "emp_id": "EXAMPLE_FIELD_IDS_ROSTER_EMP_ID",
+      "emp_name": "EXAMPLE_FIELD_IDS_ROSTER_EMP_NAME",
+      "status": "EXAMPLE_FIELD_IDS_ROSTER_STATUS"
+    },
+    "daily": {
+      "date": "EXAMPLE_FIELD_IDS_DAILY_DATE",
+      "emp_id": "EXAMPLE_FIELD_IDS_DAILY_EMP_ID",
+      "emp_name": "EXAMPLE_FIELD_IDS_DAILY_EMP_NAME",
+      "leave": "EXAMPLE_FIELD_IDS_DAILY_LEAVE",
+      "exempt": "EXAMPLE_FIELD_IDS_DAILY_EXEMPT",
+      "temp_qty": "EXAMPLE_FIELD_IDS_DAILY_TEMP_QTY",
+      "temp_hours": "EXAMPLE_FIELD_IDS_DAILY_TEMP_HOURS",
+      "train_hours": "EXAMPLE_FIELD_IDS_DAILY_TRAIN_HOURS"
+    },
+    "project_table": {
+      "name": "EXAMPLE_FIELD_IDS_PROJECT_TABLE_NAME",
+      "threshold": "EXAMPLE_FIELD_IDS_PROJECT_TABLE_THRESHOLD",
+      "acc_threshold": "EXAMPLE_FIELD_IDS_PROJECT_TABLE_ACC_THRESHOLD",
+      "status": "EXAMPLE_FIELD_IDS_PROJECT_TABLE_STATUS"
+    }
+  },
+
+  "project_fields": {
+    "大盘": {
+      "qty": "EXAMPLE_PROJECT_FIELDS_大盘_QTY",
+      "hours": "EXAMPLE_PROJECT_FIELDS_大盘_HOURS",
+      "qc": "EXAMPLE_PROJECT_FIELDS_大盘_QC",
+      "diff": "EXAMPLE_PROJECT_FIELDS_大盘_DIFF"
+    },
+    "SKU": {
+      "qty": "EXAMPLE_PROJECT_FIELDS_SKU_QTY",
+      "hours": "EXAMPLE_PROJECT_FIELDS_SKU_HOURS",
+      "qc": "EXAMPLE_PROJECT_FIELDS_SKU_QC",
+      "diff": "EXAMPLE_PROJECT_FIELDS_SKU_DIFF"
+    }
+  },
+
+  "has_temp_tasks": true,
+
+  "form_url": "https://example.invalid/YOUR_INTERNAL_URL",
+
+  "cron": {
+    "reminder": "40 17 * * 1-5",
+    "anomaly": "15 18 * * 1-5",
+    "daily_report": "30 10 * * *"
+  }
+}

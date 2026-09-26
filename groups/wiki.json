@@ -1,0 +1,57 @@
+{
+  "group_name": "WIKI组",
+  "leader": "示例人员2",
+  "data_source": "sheet",
+  "paused": true,
+
+  "sheet_mcp_url": "https://example.invalid/YOUR_MCP_ENDPOINT",
+  "personnel_sheet_mcp_url": "https://example.invalid/YOUR_MCP_ENDPOINT",
+
+  "data_node_id": "EXAMPLE_DATA_NODE_ID",
+
+  "personnel_node_id": "EXAMPLE_PERSONNEL_NODE_ID",
+  "personnel_sheet_id": "EXAMPLE_PERSONNEL_SHEET_ID",
+
+  "projects": {
+    "正式": {
+      "示例任务3": {
+        "生产": {"标产": 32, "准确率": 0.95},
+        "质检": {"标产": 40, "准确率": 0.95}
+      },
+      "示例任务10": {
+        "生产": {"标产": 4, "准确率": 0.90},
+        "质检": {"标产": 14, "准确率": 0.90}
+      }
+    },
+    "临时": {
+      "示例任务7": {
+        "生产": {"标产": 480, "准确率": 0.95}
+      },
+      "示例任务5": {
+        "生产": {"标产": 1, "准确率": 0.01}
+      },
+      "示例任务6": {
+        "生产": {"标产": 1, "准确率": 0.01}
+      },
+      "示例任务1": {
+        "生产": {"标产": 28, "准确率": 0.95}
+      }
+    }
+  },
+
+  "exclude_from_metrics": ["规则学习-业务需求"],
+
+  "qty_register_mapping": {
+    "示例任务4": "示例任务3",
+    "示例任务8": "示例任务7",
+    "示例任务9": "示例任务10",
+    "款采集": "示例任务6",
+    "示例任务2": "示例任务1"
+  },
+
+  "webhook_url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_DINGTALK_ACCESS_TOKEN",
+  "webhook_secret": "YOUR_DINGTALK_SECRET",
+  "cron": {
+    "daily_report": "30 11 * * *"
+  }
+}
