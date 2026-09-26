@@ -1,0 +1,32 @@
+{
+  "name": "xa-ops-report",
+  "version": "3.0.0",
+  "description": "运营团队跨组项目追踪与人效管理：自动化推送 + Web 看板（大盘组/WIKI组/违规申诉组/天猫榜单）",
+  "files": [
+    "SKILL.md",
+    "groups/dapan.json",
+    "groups/wiki.json",
+    "groups/shangji.json",
+    "groups/weigui.json",
+    "groups/tianmao.json",
+    "scripts/common.py",
+    "scripts/push_dapan_reminder.py",
+    "scripts/push_dapan_anomaly.py",
+    "scripts/push_dapan_daily.py",
+    "scripts/push_wiki_daily.py",
+    "scripts/push_weigui_daily.py",
+    "scripts/fetch_dapan_data.py",
+    "scripts/fetch_wiki_data.py",
+    "scripts/fetch_weigui_data.py",
+    "scripts/fetch_tianmao_data.py",
+    "references/onboarding-checklist.md",
+    "references/calculation-rules.md",
+    "references/automation-rules.md",
+    "references/table-structure.md",
+    "references/dashboard-spec.md",
+    "references/groups-detail.md",
+    "dashboard/dashboard.html",
+    "dashboard/chart.min.js",
+    "dashboard/chartjs-annotation.min.js"
+  ]
+}

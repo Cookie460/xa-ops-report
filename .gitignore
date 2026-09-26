@@ -1,0 +1,11 @@
+.DS_Store
+__MACOSX/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+dashboard/*_data.js
+*.log
