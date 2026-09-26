@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运营团队 · 项目追踪看板</title>
+<script src="chart.min.js?v=1782784225"></script>
+<script src="chartjs-annotation.min.js?v=1782784225"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --accent:#0052FF;--accent-2:#4D7CFF;
+  --accent-grad:linear-gradient(135deg,#0052FF,#4D7CFF);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 8px rgba(0,0,0,0.07);
+  --shadow-lg:0 12px 24px rgba(0,0,0,0.08);
+  --shadow-accent:0 4px 14px rgba(0,82,255,0.22);
+  --shadow-accent-lg:0 8px 24px rgba(0,82,255,0.3);
+}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#eef2fa 0%,#e2eaf6 50%,#eaf0fb 100%);background-attachment:fixed;color:#1a2340;min-height:100vh;}
+.header{background:rgba(255,255,255,0.65);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,0.7);color:#0c1d3a;padding:16px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
+.header h1{font-size:17px;font-weight:700;letter-spacing:0.3px;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.header .subtitle{font-size:11px;color:#95a5b8;margin-top:2px;}
+.filters{display:flex;gap:12px;align-items:center;}
+.period-btns{display:flex;background:rgba(0,0,0,0.06);border-radius:10px;padding:3px;gap:2px;}
+.period-btns button{padding:5px 16px;border:none;background:transparent;color:rgba(0,0,0,0.45);cursor:pointer;font-size:13px;border-radius:8px;transition:all .2s;}
+.period-btns button.active{background:#fff;color:#0c1d3a;font-weight:700;box-shadow:var(--shadow-sm);}
+.filters input[type=date]{padding:5px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:8px;background:rgba(255,255,255,0.8);color:#0c1d3a;font-size:13px;outline:none;transition:all .2s;}
+.filters input[type=date]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,82,255,0.1);}
+.period-info{font-size:12px;color:#95a5b8;min-width:120px;}
+.info-btn{width:32px;height:32px;border-radius:50%;background:rgba(0,82,255,0.06);border:1px solid rgba(0,82,255,0.15);color:var(--accent);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.info-btn:hover{background:rgba(0,82,255,0.12);box-shadow:var(--shadow-accent);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);z-index:999;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:rgba(255,255,255,0.97);backdrop-filter:blur(30px);border-radius:20px;padding:32px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.2);}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:20px;color:#0c1d3a;}
+.formula-block{margin-bottom:16px;padding:16px;background:rgba(0,82,255,0.03);border-radius:12px;border:1px solid rgba(0,82,255,0.08);}
+.formula-block h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.formula-block p{font-size:13px;color:#636e72;line-height:1.7;}
+.formula-block code{background:#eef3ff;border-radius:6px;padding:3px 8px;font-family:monospace;font-size:12px;color:#0038b8;font-weight:600;}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:#b2bec3;line-height:1;}
+.modal-close:hover{color:#636e72;}
+.container{max-width:1280px;margin:0 auto;padding:28px 24px 80px;}
+.group-card{border-radius:20px;margin-bottom:24px;overflow:hidden;background:rgba(255,255,255,0.75);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,0.6);box-shadow:var(--shadow-md);}
+.group-header{padding:16px 24px;background:linear-gradient(90deg,rgba(0,82,255,0.04),transparent);border-bottom:1px solid rgba(0,82,255,0.07);display:flex;justify-content:space-between;align-items:center;}
+.group-name{font-size:15px;font-weight:700;color:#0c1d3a;}
+.group-leader{font-size:13px;color:#95a5b8;}
+.projects-grid{display:grid;grid-template-columns:repeat(2,1fr);}
+.project-item{padding:22px 24px;cursor:pointer;transition:all .25s;border-right:1px solid rgba(0,82,255,0.06);border-bottom:1px solid rgba(0,82,255,0.06);position:relative;overflow:hidden;}
+.project-item::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,82,255,0.03),transparent);opacity:0;transition:opacity .25s;pointer-events:none;}
+.project-item:hover::after{opacity:1;}
+.project-item:nth-child(2n){border-right:none;}
+.project-item:hover{box-shadow:inset 0 0 0 1px rgba(0,82,255,0.1);}
+.proj-name{font-size:14px;font-weight:700;color:#0c1d3a;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.proj-arrow{margin-left:auto;width:28px;height:28px;background:var(--accent-grad);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;transition:all .25s;box-shadow:var(--shadow-accent);flex-shrink:0;}
+.project-item:hover .proj-arrow{box-shadow:var(--shadow-accent-lg);transform:translateX(3px);}
+.proj-tag-temp{font-size:10px;font-weight:600;color:#e8710a;background:#fff5ec;border:1px solid #ffd4a8;border-radius:4px;padding:1px 6px;white-space:nowrap;}
+.proj-tag-formal{font-size:10px;font-weight:600;color:#00a67e;background:#edfaf5;border:1px solid #a8e6cc;border-radius:4px;padding:1px 6px;white-space:nowrap;}
+.proj-metrics{display:flex;gap:10px;}
+.proj-metric{text-align:center;flex:1;}
+.proj-metric .val{font-size:22px;font-weight:800;color:#0c1d3a;}
+.proj-metric .lbl{font-size:10px;color:#95a5b8;margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;}
+.chg{font-size:11px;margin-top:4px;display:block;font-weight:600;}
+.chg.up{color:#00b894;} .chg.down{color:#e17055;} .chg.flat{color:#bbb;}
+.s-chg{font-size:13px;margin-top:6px;display:block;font-weight:600;}
+.s-chg.up{color:#00b894;} .s-chg.down{color:#e17055;} .s-chg.flat{color:#bbb;}
+.detail-view{display:none;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:rgba(255,255,255,0.85);border:1px solid rgba(0,82,255,0.15);border-radius:10px;cursor:pointer;font-size:13px;color:#636e72;margin-bottom:20px;transition:all .2s;box-shadow:var(--shadow-sm);}
+.back-btn:hover{color:var(--accent);border-color:rgba(0,82,255,0.35);background:#fff;box-shadow:var(--shadow-accent);}
+.detail-title{font-size:20px;font-weight:700;margin-bottom:20px;color:#0c1d3a;}
+.summary-cards{display:flex;gap:14px;margin-bottom:20px;}
+.summary-card{flex:1;background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.7);border-radius:16px;padding:22px 16px;text-align:center;box-shadow:var(--shadow-md);transition:all .2s;}
+.summary-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.s-val{font-size:34px;font-weight:800;color:#0c1d3a;}
+.s-lbl{font-size:11px;color:#95a5b8;margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+.chart-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+.chart-box{flex:1;min-width:300px;background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.7);border-radius:16px;padding:20px;box-shadow:var(--shadow-md);}
+.chart-box h3{font-size:12px;font-weight:600;color:#95a5b8;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.6px;}
+canvas{max-height:240px;}
+.ranking-box{background:rgba(255,255,255,0.8);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.7);border-radius:16px;padding:24px;box-shadow:var(--shadow-md);}
+.ranking-box h3{font-size:15px;font-weight:700;margin-bottom:16px;color:#0c1d3a;}
+.rank-table{width:100%;border-collapse:collapse;}
+.rank-table th{text-align:left;padding:9px 12px;font-size:11px;color:#95a5b8;border-bottom:1px solid rgba(0,82,255,0.06);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.rank-table td{padding:11px 12px;font-size:13px;border-bottom:1px solid rgba(0,0,0,0.03);}
+.rank-table tr:hover{background:rgba(0,82,255,0.03);}
+.rank-num{display:inline-flex;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.rank-1{background:linear-gradient(135deg,#f9ca24,#f0932b);}
+.rank-2{background:linear-gradient(135deg,#c8d6e5,#8395a7);}
+.rank-3{background:linear-gradient(135deg,#cd7f32,#a0522d);}
+.rank-other{background:#eef0f5;color:#636e72;}
+.acc-met{color:#00a67e;font-weight:700;}
+.acc-unmet{color:#e17055;font-weight:700;}
+.no-data{text-align:center;padding:40px;color:#b2bec3;font-size:14px;}
+</style>
+</head>
+<body>
+
+<!-- Formula modal -->
+<div class="modal-overlay" id="formulaModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>📐 指标公式说明</h2>
+    <div class="formula-block">
+      <h3>📊 CPD（人效）</h3>
+      <p><code>CPD = 项目总产量 ÷ 实际投入人数</code></p>
+      <p>实际投入人数 = Σ 每人（该项目工时 ÷ 该人总工时），请假不计入</p>
+    </div>
+    <div class="formula-block">
+      <h3>🔄 吞吐</h3>
+      <p><code>吞吐 = 实际总产量 ÷ 应产出量 × 1500</code></p>
+      <p>应产出量 = 标产 × 总人头数 − 非生产工时 × (标产÷8)</p>
+      <p>总人头数 = 生产人数 + 请假人数；非生产工时 = 其他项目工时 + 培训工时（不含请假）</p>
+      <p>达标线：<code>1500</code>（等于1500表示刚好达标）</p>
+    </div>
+    <div class="formula-block">
+      <h3>✅ 准确率</h3>
+      <p><code>准确率 = (1 − 不一致量 ÷ 被质检量) × 100%</code></p>
+      <p>无质检数据的人不计入；各项目达标线见图表目标线</p>
+    </div>
+    <div class="formula-block">
+      <h3>↕ 环比</h3>
+      <p><code>环比 = (本周期值 − 上周期值) ÷ 上周期值 × 100%</code></p>
+      <p>日→跟前一天比 / 周→跟上一周比 / 月→跟上一月比</p>
+      <p>▲ 绿色 = 上升；▼ 红色 = 下降</p>
+    </div>
+  </div>
+</div>
+
+<style>
+.landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;position:relative;overflow:hidden;}
+.landing::before,.landing::after{content:"";position:absolute;border-radius:50%;pointer-events:none;}
+.landing::before{width:600px;height:600px;background:radial-gradient(circle,rgba(0,82,255,0.07),transparent 70%);top:-120px;right:-120px;}
+.landing::after{width:400px;height:400px;background:radial-gradient(circle,rgba(77,124,255,0.05),transparent 70%);bottom:-80px;left:-80px;}
+.landing-label{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,82,255,0.22);background:rgba(0,82,255,0.05);border-radius:999px;padding:5px 16px;margin-bottom:28px;}
+.landing-label-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse-dot 2s infinite;}
+@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.65;}}
+.landing-label-text{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);font-weight:500;}
+.landing-title{font-size:3.4rem;font-weight:800;text-align:center;line-height:1.1;margin-bottom:14px;color:#0c1d3a;letter-spacing:-0.02em;}
+.landing-title .gt{background:linear-gradient(135deg,#0052FF,#4D7CFF);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.landing-subtitle{font-size:13px;color:#95a5b8;text-align:center;margin-bottom:52px;letter-spacing:0.04em;}
+.landing-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;}
+.landing-card{width:210px;background:rgba(255,255,255,0.82);backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,0.78);border-radius:24px;padding:34px 22px 26px;cursor:pointer;transition:all .3s cubic-bezier(.16,1,.3,1);box-shadow:0 4px 16px rgba(0,0,0,0.07);text-align:center;position:relative;overflow:hidden;}
+.landing-card::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,82,255,0.04),transparent);opacity:0;transition:opacity .3s;}
+.landing-card:hover{transform:translateY(-8px);box-shadow:0 16px 36px rgba(0,82,255,0.14),0 4px 12px rgba(0,0,0,0.06);border-color:rgba(0,82,255,0.18);}
+.landing-card:hover::before{opacity:1;}
+.lc-icon{font-size:34px;margin-bottom:16px;display:block;}
+.lc-name{font-size:22px;font-weight:800;color:#0c1d3a;margin-bottom:10px;letter-spacing:-0.01em;}
+.lc-groups{font-size:11.5px;color:#b2bec3;line-height:1.8;margin-bottom:18px;}
+.lc-arrow{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0052FF,#4D7CFF);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,82,255,0.26);transition:all .3s;}
+.landing-card:hover .lc-arrow{transform:translateX(3px);box-shadow:0 6px 18px rgba(0,82,255,0.38);}
+/* Landing header bar */
+.landing-header{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:14px 32px;background:rgba(255,255,255,0.65);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(255,255,255,0.7);box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.lh-title{font-size:15px;font-weight:700;background:linear-gradient(135deg,#0052FF,#4D7CFF);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.lh-formula-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:rgba(0,82,255,0.06);border:1px solid rgba(0,82,255,0.18);border-radius:10px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:500;transition:all .2s;}
+.lh-formula-btn:hover{background:rgba(0,82,255,0.12);box-shadow:0 4px 12px rgba(0,82,255,0.15);}
+/* Cards wrap */
+.landing-cards-wrap{display:flex;gap:60px;align-items:center;justify-content:center;position:relative;z-index:1;}
+/* Section wrapper for orbit effect */
+.section-wrapper{position:relative;cursor:pointer;width:170px;height:220px;display:flex;align-items:center;justify-content:center;}
+.section-wrapper .landing-card{position:relative;z-index:2;width:170px;padding:36px 24px 28px;}
+/* Orbit chips */
+.orbit-chip{position:absolute;display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap;pointer-events:none;z-index:3;
+  opacity:0;transform:scale(0.6);transition:all .3s cubic-bezier(.34,1.56,.64,1);}
+.orbit-chip.active{background:rgba(255,255,255,0.9);border:1.5px solid rgba(0,200,117,0.35);color:#0c1d3a;box-shadow:0 3px 12px rgba(0,0,0,0.08);}
+.orbit-chip.inactive{background:rgba(255,240,240,0.9);border:1.5px solid rgba(231,76,60,0.3);color:#c0392b;box-shadow:0 3px 12px rgba(0,0,0,0.06);}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.chip-dot.green{background:#00c875;}
+.chip-dot.red{background:#e74c3c;}
+/* Chip positions (hidden → visible on hover) */
+/* HRO chips: all go lower-left to avoid covering card */
+.chip-tl{bottom:10px;left:-10px;transform:scale(0.6);}
+.chip-tr{bottom:50px;left:-10px;transform:scale(0.6);}
+.chip-bl{bottom:90px;left:-10px;transform:scale(0.6);}
+.chip-br{bottom:130px;left:-10px;transform:scale(0.6);}
+/* BPO chip: lower-right */
+.chip-top{bottom:10px;right:-10px;transform:scale(0.6);}
+/* Hover: HRO chips fly lower-left */
+.section-wrapper:hover .orbit-chip{opacity:1;}
+.section-wrapper:hover .chip-tl{transform:scale(1) translate(-90px,20px);}
+.section-wrapper:hover .chip-tr{transform:scale(1) translate(-90px,10px);}
+.section-wrapper:hover .chip-bl{transform:scale(1) translate(-90px,0px);}
+.section-wrapper:hover .chip-br{transform:scale(1) translate(-90px,-10px);}
+/* BPO chip flies lower-right */
+.section-wrapper:hover .chip-top{transform:scale(1) translate(90px,20px);}
+</style>
+
+<div class="header" id="mainHeader" style="display:none">
+  <div>
+    <h1>📊 <span id="sectionTitle">HRO</span> · 项目追踪看板</h1>
+    <div class="subtitle">Task Performance Dashboard</div>
+  </div>
+  <div class="filters" id="mainFilters">
+    <div class="period-btns" id="periodBtns">
+      <button data-period="day" class="active">日</button>
+      <button data-period="week">周</button>
+      <button data-period="month">月</button>
+    </div>
+    <input type="date" id="dateInput">
+    <span class="period-info" id="periodLabel"></span>
+    <button class="info-btn" onclick="openModal()" title="指标公式说明">ⓘ</button>
+  </div>
+</div>
+
+<div class="landing-header" id="landing-header-bar">
+  <div class="lh-title">📊 运营团队</div>
+  <button class="lh-formula-btn" onclick="openModal()">ⓘ 指标公式</button>
+</div>
+
+<div id="landingPage">
+  <div class="landing">
+    <div class="landing-label"><span class="landing-label-dot"></span><span class="landing-label-text">运营团队</span></div>
+    <h1 class="landing-title">运营团队<br><span class="gt">项目追踪看板</span></h1>
+    <div class="landing-cards-wrap">
+
+      <div class="section-wrapper" onclick="enterSection('hro')">
+        <div class="landing-card hro-card">
+          <span class="lc-icon">🏢</span>
+          <div class="lc-name">HRO</div>
+          <span class="lc-arrow">›</span>
+        </div>
+        <div class="orbit-chip chip-tl active"><span class="chip-dot green"></span>大盘组</div>
+        <div class="orbit-chip chip-tr active" style="transition-delay:.05s"><span class="chip-dot green"></span>WIKI 组</div>
+        <div class="orbit-chip chip-bl active" style="transition-delay:.1s"><span class="chip-dot green"></span>违规申诉组</div>
+        <div class="orbit-chip chip-br inactive" style="transition-delay:.15s"><span class="chip-dot red"></span>商机组 ✗</div>
+      </div>
+
+      <div class="section-wrapper" onclick="enterSection('bpo')">
+        <div class="landing-card bpo-card">
+          <span class="lc-icon">🛍️</span>
+          <div class="lc-name">BPO</div>
+          <span class="lc-arrow">›</span>
+        </div>
+        <div class="orbit-chip chip-top active"><span class="chip-dot green"></span>天猫榜单</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="mainContainer" style="display:none">
+  <div id="homeView"><button class="back-btn" id="backToLandingBtn" onclick="showLanding()">← 返回首页</button><div id="groupsContainer"></div></div>
+  <div id="detailView" class="detail-view">
+    <button class="back-btn" onclick="showHome()">← 返回总览</button>
+    <h2 class="detail-title" id="detailTitle"></h2>
+    <div class="summary-cards" id="summaryCards"></div>
+    <div class="chart-row" id="chartRow"></div>
+    <div class="ranking-box" id="rankingBox"><h3 id="rankingTitle">📋 员工准确率排名</h3><table class="rank-table" id="rankTable"></table></div>
+  </div>
+</div>
+
+<script>
+// 数据文件同步加载 + 时间戳防缓存
+var _ts = Date.now();
+document.write('<scr'+'ipt src="dapan_data.js?v='+_ts+'"></scr'+'ipt>');
+document.write('<scr'+'ipt src="wiki_dapan_data.js?v='+_ts+'"></scr'+'ipt>');
+document.write('<scr'+'ipt src="weigui_dapan_data.js?v='+_ts+'"></scr'+'ipt>');
+document.write('<scr'+'ipt src="shangji_dapan_data.js?v='+_ts+'"></scr'+'ipt>');
+document.write('<scr'+'ipt src="tianmao_dapan_data.js?v='+_ts+'"></scr'+'ipt>');
+</script>
+<script>
+// ── Normalize groups ──
+const GROUPS=[];
+if(typeof DASHBOARD_DATA!=='undefined')DASHBOARD_DATA.forEach(g=>GROUPS.push({name:g.group_name,leader:g.leader,projects:g.projects,employees:g.employees,records:g.records,fieldKeys:g.project_field_keys,hasTemp:g.has_temp_tasks,source:"ai_table"}));
+if(typeof WIKI_DATA!=='undefined')GROUPS.push({name:WIKI_DATA.group_name,leader:WIKI_DATA.leader,employees:WIKI_DATA.employees,dailyData:WIKI_DATA.daily_data,rankingData:WIKI_DATA.ranking_data||[],projectsConfig:WIKI_DATA.projects_config,fieldKeys:WIKI_DATA.project_field_keys||{},source:"sheet"});
+if(typeof WEIGUI_DATA!=='undefined')GROUPS.push({name:WEIGUI_DATA.group_name,leader:WEIGUI_DATA.leader,employees:WEIGUI_DATA.employees,dailyData:WEIGUI_DATA.daily_data,rankingData:WEIGUI_DATA.ranking_data||[],projectsConfig:WEIGUI_DATA.projects_config,fieldKeys:{},source:"sheet"});
+if(typeof SHANGJI_DATA!=='undefined'){
+  const _sjInactiveFrom="2026-07-01";
+  GROUPS.push({name:SHANGJI_DATA.group_name,leader:SHANGJI_DATA.leader,employees:SHANGJI_DATA.employees,dailyData:SHANGJI_DATA.daily_data,rankingData:SHANGJI_DATA.ranking_data||[],projectsConfig:SHANGJI_DATA.projects_config,fieldKeys:{},source:"sheet",inactiveFrom:_sjInactiveFrom});
+}
+if(typeof TIANMAO_DATA!=='undefined')GROUPS.push({name:TIANMAO_DATA.group_name,leader:TIANMAO_DATA.leader||"",weeklyData:TIANMAO_DATA.weekly_data,monthlyData:TIANMAO_DATA.monthly_data,rankingData:TIANMAO_DATA.ranking_data||[],source:"tianmao"});
+
+// Show update time
+const _today=(()=>{const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;})();
+// Default to most recent date with data
+const _latestDate=(()=>{
+  const dates=new Set();
+  if(typeof DASHBOARD_DATA!=="undefined")DASHBOARD_DATA.forEach(g=>(g.records||[]).forEach(r=>{if(r.date)dates.add(r.date);}));
+  if(typeof WIKI_DATA!=="undefined")(WIKI_DATA.daily_data||[]).forEach(d=>{if(d.date)dates.add(d.date);});
+  if(typeof WEIGUI_DATA!=="undefined")(WEIGUI_DATA.daily_data||[]).forEach(d=>{if(d.date)dates.add(d.date);});
+  if(typeof SHANGJI_DATA!=="undefined")(SHANGJI_DATA.daily_data||[]).forEach(d=>{if(d.date)dates.add(d.date);});
+  const sorted=[...dates].sort();
+  return sorted.length?sorted[sorted.length-1]:_today;
+})();
+const DISPLAY_NAMES={"大盘":"大盘for商品","SKU":"大盘for SKU"};
+function displayName(name){return DISPLAY_NAMES[name]||name;}
+let currentPeriod="day",currentDate=_latestDate,currentDetailGroup=null,currentDetailProj=null;
+let charts=[];
+let currentSection=null; // 'hro' | 'bpo'
+
+// 定义各 section 包含的组
+const HRO_GROUPS=["大盘组","WIKI组","商机组","违规申诉组"];
+const BPO_GROUPS=["天猫榜单"];
+
+function enterSection(section){
+  currentSection=section;
+  document.getElementById("landingPage").style.display="none";
+  document.getElementById("landing-header-bar").style.display="none";
+  document.getElementById("mainHeader").style.display="flex";
+  document.getElementById("mainContainer").style.display="block";
+  document.getElementById("sectionTitle").textContent=section==="hro"?"HRO":"BPO";
+  // BPO 只支持周/月，去掉日按钮
+  const dayBtn=document.querySelector('#periodBtns button[data-period="day"]');
+  if(section==="bpo"){
+    dayBtn.style.display="none";
+    if(currentPeriod==="day"){currentPeriod="week";document.querySelector('#periodBtns button[data-period="week"]').click();}
+  } else {
+    dayBtn.style.display="";
+  }
+  showHome();
+}
+
+function showLanding(){
+  currentSection=null;
+  document.getElementById("landingPage").style.display="block";
+  document.getElementById("landing-header-bar").style.display="flex";
+  document.getElementById("mainHeader").style.display="none";
+  document.getElementById("mainContainer").style.display="none";
+  currentDetailGroup=null;currentDetailProj=null;
+  charts.forEach(c=>c.destroy());charts=[];
+}
+
+document.querySelectorAll(".period-btns button").forEach(btn=>{btn.addEventListener("click",()=>{document.querySelectorAll(".period-btns button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");currentPeriod=btn.dataset.period;render();});});
+document.getElementById("dateInput").value=_latestDate;
+document.getElementById("dateInput").addEventListener("change",e=>{currentDate=e.target.value;render();});
+
+function fmt(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function getRange(date,p){const d=new Date(date+"T00:00:00");if(p==="day")return{start:date,end:date};if(p==="week"){const w=d.getDay()||7;const m=new Date(d);m.setDate(d.getDate()-w+1);const s=new Date(m);s.setDate(m.getDate()+6);return{start:fmt(m),end:fmt(s)};}return{start:fmt(new Date(d.getFullYear(),d.getMonth(),1)),end:fmt(new Date(d.getFullYear(),d.getMonth()+1,0))};}
+function getPrev(r,p){const s=new Date(r.start+"T00:00:00");if(p==="day"){s.setDate(s.getDate()-1);return{start:fmt(s),end:fmt(s)};}if(p==="week"){s.setDate(s.getDate()-7);const e=new Date(s);e.setDate(s.getDate()+6);return{start:fmt(s),end:fmt(e)};}s.setMonth(s.getMonth()-1);return{start:fmt(s),end:fmt(new Date(s.getFullYear(),s.getMonth()+1,0))};}
+function filterRecs(records,range){return records.filter(r=>r.date>=range.start&&r.date<=range.end);}
+function getTrendRanges(end,period,count){const rs=[];let d=end;for(let i=0;i<count;i++){const r=getRange(d,period);rs.unshift(r);const s=new Date(r.start+"T00:00:00");if(period==="day")s.setDate(s.getDate()-1);else if(period==="week")s.setDate(s.getDate()-1);else s.setDate(0);d=fmt(s);}return rs;}
+
+// ── AI Table groups (大盘组) ──
+function calcMetricsAITable(records,project,group){
+  const fk=group.fieldKeys[project];
+  if(!fk)return{cpd:0,throughput:0,accuracy:null,producers:0,leaveCount:0,totalQty:0,target:0,hasHours:false,inputPeople:0};
+  const proj=group.projects.find(p=>p.name===project);
+  const thr=proj?proj.threshold:400;
+  const hourly=thr/8;
+  let tQ=0,producers=0,nonProdH=0,inputPeople=0,tQC=0,tD=0,hasHours=false;
+  // First pass: find dates that have hours data
+  const datesWithHours=new Set();
+  for(const r of records){
+    if(r.leave==="全天")continue;
+    const totalH=(()=>{let t=0;for(const pk of Object.values(group.fieldKeys))t+=(r[pk.hours]||0);t+=(r.temp_hours||0);return t;})();
+    if(totalH>0)datesWithHours.add(r.date);
+  }
+  // Second pass: calculate metrics
+  let leaveCount=0;
+  for(const r of records){
+    if(r.leave==="全天"){if(datesWithHours.has(r.date))leaveCount++;continue;}
+    if(r.leave==="半天"){if(datesWithHours.has(r.date))leaveCount+=0.5;}
+    if(r.leave==="1小时"||r.leave==="2小时"||r.leave==="3小时"){if(datesWithHours.has(r.date))leaveCount+=parseInt(r.leave)/8;}
+    tQC+=r[fk.qc]||0;tD+=r[fk.diff]||0;
+    const q=r[fk.qty]||0,h=r[fk.hours]||0;
+    if(!q&&!h)continue;
+    const totalH=(()=>{let t=0;for(const pk of Object.values(group.fieldKeys))t+=(r[pk.hours]||0);t+=(r.temp_hours||0);t+=(r.train_hours||0);return t;})();
+    if(totalH>0){hasHours=true;inputPeople+=h/totalH;producers++;tQ+=q;
+      let otherH=0;for(const pk of Object.values(group.fieldKeys)){if(pk.hours!==fk.hours)otherH+=(r[pk.hours]||0);}otherH+=(r.temp_hours||0);otherH+=(r.train_hours||0);if(r.leave==="半天")otherH+=4;if(r.leave==="1小时"||r.leave==="2小时"||r.leave==="3小时")otherH+=parseInt(r.leave);nonProdH+=otherH;}
+  }
+  const target=thr*(producers+leaveCount)-nonProdH*hourly;
+  return{cpd:hasHours&&inputPeople>0?tQ/inputPeople:0,throughput:hasHours&&target>0?(tQ/target)*1500:0,accuracy:tQC>0?(1-tD/tQC)*100:null,producers,leaveCount,totalQty:tQ,target,hasHours,inputPeople};
+}
+
+// ── Tianmao: read pre-computed weekly/monthly data ──
+function calcMetricsTianmao(g,range,project){
+  const src=currentPeriod==="month"?g.monthlyData:g.weeklyData;
+  // Find the item whose period overlaps with range
+  const items=src.filter(d=>d.project===project&&d.start_date<=range.end&&d.end_date>=range.start);
+  if(!items.length)return{cpd:0,throughput:0,accuracy:null,producers:0,leaveCount:0,totalQty:0,target:0,hasHours:true,inputPeople:0,threshold:0};
+  // Use last matching period (most recent)
+  const d=items[items.length-1];
+  return{cpd:d.cpd,throughput:d.throughput,accuracy:d.accuracy,producers:0,leaveCount:0,totalQty:d.total_qty,target:d.target_qty,hasHours:d.cpd>0,inputPeople:0,threshold:d.cpd_target};
+}
+
+// ── Sheet groups (WIKI组) — aggregate pre-computed daily data ──
+function calcMetricsSheet(dailyData,project,range){
+  const items=dailyData.filter(d=>d.date>=range.start&&d.date<=range.end&&d.project===project);
+  if(!items.length)return{cpd:0,throughput:0,accuracy:null,producers:0,leaveCount:0,totalQty:0,target:0,hasHours:false,inputPeople:0,threshold:0};
+  const tQ=items.reduce((s,d)=>s+d.total_qty,0);
+  const tTarget=items.reduce((s,d)=>s+d.target,0);
+  const tInput=items.reduce((s,d)=>s+d.input_people,0);
+  const tProducers=items.reduce((s,d)=>s+d.producers,0);
+  const tLeave=items.reduce((s,d)=>s+d.leave_count,0);
+  const tQC=items.reduce((s,d)=>s+(d.total_qc||0),0);
+  const tDiff=items.reduce((s,d)=>s+(d.total_diff||0),0);
+  const thr=items[0].threshold;
+  return{cpd:tInput>0?tQ/tInput:0,throughput:tTarget>0?(tQ/tTarget)*1500:0,accuracy:tQC>0?(1-tDiff/tQC)*100:null,producers:tProducers,leaveCount:tLeave,totalQty:tQ,target:tTarget,hasHours:tInput>0,inputPeople:tInput,threshold:thr};
+}
+
+function getGroupMetrics(g,range,project){
+  if(g.source==="tianmao") return calcMetricsTianmao(g,range,project);
+  if(g.source==="sheet")return calcMetricsSheet(g.dailyData,project,range);
+  return calcMetricsAITable(filterRecs(g.records,range),project,g);
+}
+
+function getActiveProjects(g,range){
+  const sortByFormal=(arr,getCat)=>arr.sort((a,b)=>{const ca=getCat(a)==="正式"?0:1,cb=getCat(b)==="正式"?0:1;return ca-cb;});
+  if(g.source==="tianmao"){
+    const src=currentPeriod==="month"?g.monthlyData:g.weeklyData;
+    const items=src.filter(d=>d.start_date<=range.end&&d.end_date>=range.start&&(d.cpd>0||d.accuracy!==null));
+    const projs=new Map();
+    items.forEach(d=>{if(!projs.has(d.project))projs.set(d.project,{name:d.project,threshold:d.cpd_target,acc_threshold:d.acc_target/100,category:d.category||"正式"});});
+    return sortByFormal([...projs.values()],p=>p.category);
+  }
+  if(g.source==="sheet"){
+    const items=g.dailyData.filter(d=>d.date>=range.start&&d.date<=range.end&&d.total_qty>0);
+    const projs=new Map();
+    items.forEach(d=>{if(!projs.has(d.project))projs.set(d.project,{name:d.project,threshold:d.threshold,status:"启用",acc_threshold:d.acc_threshold,category:d.category||"临时"});});
+    return sortByFormal([...projs.values()],p=>p.category);
+  }
+  const filtered=g.projects.filter(p=>p.status==="启用");
+  return sortByFormal(filtered,p=>p.category||"正式");
+}
+
+function getProjectThreshold(g,projName){
+  if(g.source==="tianmao"){
+    const src=currentPeriod==="month"?g.monthlyData:g.weeklyData;
+    const d=src.find(x=>x.project===projName);
+    return d?d.cpd_target:0;
+  }
+  if(g.source==="sheet"){
+    const d=g.dailyData.find(x=>x.project===projName);
+    return d?d.threshold:32;
+  }
+  const p=g.projects.find(x=>x.name===projName);
+  return p?p.threshold:400;
+}
+
+function getProjectAccThreshold(g,projName){
+  if(g.source==="tianmao"){
+    const src=currentPeriod==="month"?g.monthlyData:g.weeklyData;
+    const d=src.find(x=>x.project===projName);
+    return d&&d.acc_target>0?d.acc_target/100:0.95;
+  }
+  if(g.source==="sheet"){
+    const d=g.dailyData.find(x=>x.project===projName);
+    return d?d.acc_threshold:0.95;
+  }
+  return 0.95;
+}
+
+function chgHTML(cur,prev,big){
+  if(!prev||prev===0)return `<span class="${big?'s-chg':'chg'} flat">—</span>`;
+  const p=((cur-prev)/prev*100).toFixed(1);
+  const cls=p>0.05?"up":p<-0.05?"down":"flat";
+  const arrow=cls==="up"?"▲":cls==="down"?"▼":"—";
+  return `<span class="${big?'s-chg':'chg'} ${cls}">${arrow} ${Math.abs(p)}%</span>`;
+}
+
+function renderHome(){
+  const range=getRange(currentDate,currentPeriod),prev=getPrev(range,currentPeriod);
+  const c=document.getElementById("groupsContainer");c.innerHTML="";
+  const sectionFilter=currentSection==="hro"?HRO_GROUPS:currentSection==="bpo"?BPO_GROUPS:null;
+  for(const g of GROUPS){
+    // 停用组：选中日期 >= inactiveFrom 时不显示
+    if(g.inactiveFrom && currentDate >= g.inactiveFrom) continue;
+    // section 过滤
+    if(sectionFilter && !sectionFilter.includes(g.name)) continue;
+    const active=getActiveProjects(g,range);
+    let html="";
+    for(const proj of active){
+      const m=getGroupMetrics(g,range,proj.name);
+      const pm=getGroupMetrics(g,prev,proj.name);
+      const projCat=g.source==="tianmao"?(proj.category||"正式"):g.source==="sheet"?(g.dailyData||[]).find(d=>d.project===proj.name&&d.date>=range.start&&d.date<=range.end)?.category||"临时":(proj.category||"正式");const isTemp=projCat==="临时";
+      const isFormal=projCat==="正式";
+      const showTags=g.source==="tianmao"?true:g.source==="sheet"?!!(g.dailyData||[]).find(d=>d.category==="临时"):true;
+      html+=`<div class="project-item" onclick="showDetail('${g.name}','${proj.name}')">
+        <div class="proj-name">${displayName(proj.name)}${showTags&&isFormal?'<span class="proj-tag-formal">正式</span>':''}${showTags&&isTemp?'<span class="proj-tag-temp">临时</span>':''}<span class="proj-arrow">›</span></div>
+        <div class="proj-metrics">
+          <div class="proj-metric"><div class="val">${m.hasHours&&m.cpd>0?m.cpd.toFixed(0):"—"}</div><div class="lbl">CPD</div>${m.hasHours?chgHTML(m.cpd,pm.cpd):'<span class="chg flat">—</span>'}</div>
+          <div class="proj-metric"><div class="val">${m.hasHours&&m.throughput>0?m.throughput.toFixed(0):"—"}</div><div class="lbl">吞吐</div>${m.hasHours?chgHTML(m.throughput,pm.throughput):'<span class="chg flat">—</span>'}</div>
+          <div class="proj-metric"><div class="val">${m.accuracy!==null?m.accuracy.toFixed(1)+"%":"—"}</div><div class="lbl">准确率</div>${m.accuracy!==null&&pm.accuracy!==null?chgHTML(m.accuracy,pm.accuracy):'<span class="chg flat">—</span>'}</div>
+        </div></div>`;
+    }
+    if(!active.length)html='<div class="no-data">当前周期无项目数据</div>';
+    const leaderText=g.leader?`<span class="group-leader">负责人：${g.leader}</span>`:'';
+    const noteText=g.source==="tianmao"?'<span class="group-leader" style="font-size:12px;color:#e8710a;font-weight:500">⚠ 不支持日度，自动归属到所属周</span>':'';
+    c.innerHTML+=`<div class="group-card"><div class="group-header"><span class="group-name">${g.name}</span>${leaderText}${noteText}</div><div class="projects-grid">${html}</div></div>`;
+  }
+}
+
+function showHome(){currentDetailGroup=null;currentDetailProj=null;document.getElementById("homeView").style.display="block";document.getElementById("detailView").style.display="none";renderHome();}
+
+function showDetail(groupName,projName){
+  currentDetailGroup=groupName;currentDetailProj=projName;
+  document.getElementById("homeView").style.display="none";
+  document.getElementById("detailView").style.display="block";
+  document.getElementById("detailTitle").textContent=`${groupName} · ${displayName(projName)}`;
+  const g=GROUPS.find(x=>x.name===groupName);
+  const range=getRange(currentDate,currentPeriod),prev=getPrev(range,currentPeriod);
+  const m=getGroupMetrics(g,range,projName);
+  const pm=getGroupMetrics(g,prev,projName);
+  const thr=getProjectThreshold(g,projName);
+  const accThr=getProjectAccThreshold(g,projName);
+
+  document.getElementById("summaryCards").innerHTML=`
+    <div class="summary-card"><div class="s-val">${m.hasHours&&m.cpd>0?m.cpd.toFixed(0):"—"}</div><div class="s-lbl">CPD</div>${m.hasHours?chgHTML(m.cpd,pm.cpd,true):'<span class="s-chg flat">—</span>'}</div>
+    <div class="summary-card"><div class="s-val">${m.hasHours&&m.throughput>0?m.throughput.toFixed(0):"—"}</div><div class="s-lbl">吞吐</div>${m.hasHours?chgHTML(m.throughput,pm.throughput,true):'<span class="s-chg flat">—</span>'}</div>
+    <div class="summary-card"><div class="s-val">${m.accuracy!==null?m.accuracy.toFixed(1)+"%":"—"}</div><div class="s-lbl">准确率</div>${m.accuracy!==null&&pm.accuracy!==null?chgHTML(m.accuracy,pm.accuracy,true):'<span class="s-chg flat">—</span>'}</div>
+    <div class="summary-card"><div class="s-val">${g.source==="tianmao"?m.totalQty.toLocaleString():m.hasHours?m.inputPeople.toFixed(1):"—"}</div><div class="s-lbl">${g.source==="tianmao"?"达成量级":"实际投入人数"}</div><span class="s-chg flat">${g.source==="tianmao"?"目标 "+m.target.toLocaleString():"生产 "+m.producers+" · 请假 "+m.leaveCount+" · 产出 "+m.totalQty.toLocaleString()}</span></div>`;
+
+  charts.forEach(c=>c.destroy());charts=[];
+  const cr=document.getElementById("chartRow");
+  cr.innerHTML=`<div class="chart-box"><h3>CPD 趋势</h3><canvas id="dCpd"></canvas></div>
+    <div class="chart-box"><h3>吞吐趋势</h3><canvas id="dTp"></canvas></div>
+    <div class="chart-box"><h3>准确率趋势</h3><canvas id="dAcc"></canvas></div>`;
+
+  const cnt=currentPeriod==="day"?10:currentPeriod==="week"?6:4;
+  const ranges=getTrendRanges(currentDate,currentPeriod,cnt);
+  const labels=ranges.map(r=>currentPeriod==="day"?r.start.slice(5):currentPeriod==="week"?r.start.slice(5)+"~"+r.end.slice(5):r.start.slice(0,7));
+  const cpdD=[],tpD=[],accD=[];
+  for(const r of ranges){const mm=getGroupMetrics(g,r,projName);cpdD.push(mm.hasHours&&mm.cpd>0?Math.round(mm.cpd):null);tpD.push(mm.hasHours&&mm.throughput>0?Math.round(mm.throughput):null);accD.push(mm.accuracy!==null?Math.round(mm.accuracy*10)/10:null);}
+
+  function makeChart(id,data,color,targetVal,targetLabel){
+    const ctx=document.getElementById(id).getContext("2d");
+    const gradient=ctx.createLinearGradient(0,0,0,260);
+    gradient.addColorStop(0,color+"30");gradient.addColorStop(1,color+"05");
+    const annotation=targetVal?{annotations:{target:{type:"line",yMin:targetVal,yMax:targetVal,borderColor:"#e17055",borderWidth:1.5,borderDash:[6,4],label:{display:true,content:targetLabel,position:"end",backgroundColor:"#e17055",color:"#fff",font:{size:10},padding:3}}}}:{};
+    const c=new Chart(ctx,{type:"line",data:{labels,datasets:[{label:projName,data,borderColor:color,backgroundColor:gradient,fill:true,tension:.4,pointRadius:5,pointBackgroundColor:"#fff",pointBorderColor:color,pointBorderWidth:2.5,pointHoverRadius:7,spanGaps:true,borderWidth:2.5}]},
+    options:{responsive:true,interaction:{mode:"index",intersect:false},plugins:{legend:{display:false},annotation,...(targetVal?{annotation}:{})},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11},color:"#95a5b8"}},y:{grid:{color:"#f0f2f5",drawBorder:false},ticks:{font:{size:11},color:"#95a5b8"},beginAtZero:false}},
+    layout:{padding:{top:8,right:12}}}});
+    charts.push(c);
+  }
+
+  makeChart("dCpd",cpdD,"#2d5aa0",thr,`目标 ${thr}`);
+  makeChart("dTp",tpD,"#e8710a",1500,"目标 1500");
+  makeChart("dAcc",accD,"#0d9488",accThr*100,`目标 ${accThr*100}%`);
+
+  // ── Ranking ──
+  const tb=document.getElementById("rankTable");
+  let empMap={};
+
+  if(g.source==="tianmao"){
+    const rd=(g.rankingData||[]).filter(r=>r.date>=range.start&&r.date<=range.end&&(r.project===projName||projName.includes(r.project)||r.project.includes(projName)));
+    for(const r of rd){if(r.qc<=0)continue;if(!empMap[r.name])empMap[r.name]={qc:0,diff:0};empMap[r.name].qc+=r.qc;empMap[r.name].diff+=r.diff;}
+  } else if(g.source==="sheet"){
+    const rd=(g.rankingData||[]).filter(r=>r.date>=range.start&&r.date<=range.end&&(r.project===projName||projName.includes(r.project)||r.project.includes(projName)));
+    for(const r of rd){if(!empMap[r.name])empMap[r.name]={qc:0,diff:0};empMap[r.name].qc+=r.qc;empMap[r.name].diff+=r.diff;}
+  } else {
+    const fk=g.fieldKeys[projName];
+    if(!fk){tb.innerHTML='<tr><td colspan="5" class="no-data">无数据</td></tr>';return;}
+    const recs=filterRecs(g.records,range);
+    for(const r of recs){const qc=r[fk.qc]||0,df=r[fk.diff]||0;if(qc===0)continue;if(!empMap[r.name])empMap[r.name]={qc:0,diff:0};empMap[r.name].qc+=qc;empMap[r.name].diff+=df;}
+  }
+
+  const sorted=Object.entries(empMap).filter(([,d])=>d.qc>0).map(([name,d])=>({name,acc:Math.round((1-d.diff/d.qc)*1000)/10,qc:d.qc,diff:d.diff})).sort((a,b)=>b.acc-a.acc);
+  for(let i=0;i<sorted.length;i++){if(i>0&&sorted[i].acc===sorted[i-1].acc){sorted[i].rank=sorted[i-1].rank;sorted[i].tied=true;}else{sorted[i].rank=i+1;sorted[i].tied=false;}}
+  for(let i=0;i<sorted.length-1;i++){if(sorted[i].acc===sorted[i+1].acc)sorted[i].tied=true;}
+  if(sorted.length===0){tb.innerHTML='<tr><td colspan="5" class="no-data">当前周期无质检数据</td></tr>';return;}
+  let html='<thead><tr><th>排名</th><th>姓名</th><th>准确率</th><th>质检量</th><th>不一致</th></tr></thead><tbody>';
+  const accThrForRank=getProjectAccThreshold(g,projName)*100;
+  sorted.forEach(r=>{const rc=r.rank<=3?`rank-${r.rank}`:"rank-other";const bc=r.acc>=accThrForRank?"acc-met":"acc-unmet";const rankText=r.tied?`=${r.rank}`:r.rank;html+=`<tr><td><span class="rank-num ${rc}">${rankText}</span></td><td style="font-weight:500">${r.name}</td><td><span class="${bc}">${r.acc.toFixed(1)}%</span></td><td style="color:#95a5b8">${r.qc}</td><td style="color:#95a5b8">${r.diff}</td></tr>`;});
+  html+="</tbody>";tb.innerHTML=html;
+}
+
+function openModal(){document.getElementById("formulaModal").classList.add("open");}
+function closeModal(){document.getElementById("formulaModal").classList.remove("open");}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+
+function getRankingTitle(period,range){
+  if(period==="day")return`📋 员工准确率排名（${range.start.slice(5)}）`;
+  if(period==="week")return`📋 员工准确率排名（${range.start.slice(5)} ~ ${range.end.slice(5)}）`;
+  const d=new Date(range.start+"T00:00:00");
+  return`📋 员工准确率排名（${d.getFullYear()}年${d.getMonth()+1}月）`;
+}
+
+function render(){
+  const range=getRange(currentDate,currentPeriod);
+  const pm={day:"日",week:"周",month:"月"};
+  const lbl=currentPeriod==="day"?range.start.slice(5):currentPeriod==="week"?range.start.slice(5)+" ~ "+range.end.slice(5):range.start.slice(0,7);
+  document.getElementById("periodLabel").textContent=`当前${pm[currentPeriod]}：${lbl}`;
+  const rt=document.getElementById("rankingTitle");
+  if(rt)rt.textContent=getRankingTitle(currentPeriod,range);
+  if(currentDetailGroup&&currentDetailProj)showDetail(currentDetailGroup,currentDetailProj);
+  else renderHome();
+}
+render();
+</script>
+</body>
+</html>
